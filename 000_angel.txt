@@ -1,0 +1,11 @@
+!000!angel!00!12!0000 --> File Header
+#1#00000000 --> Page Header
+$0$<field><field2>...<field12> --> Record Header
+$1$<field><field2>...<field12> --> Record Header
+$2$<field><field2>...<field12> --> Record Header
+$3$<field><field2>...<field12> --> Record Header
+$4$<field><field2>...<field12> --> Record Header
+$5$<field><field2>...<field12> --> Record Header
+$6$<field><field2>...<field12> --> Record Header
+$7$<field><field2>...<field12> --> Record Header
+...
