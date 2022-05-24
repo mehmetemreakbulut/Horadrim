@@ -1,3 +1,0 @@
-name,angel,s,001
-alias,angel,s,010
-affiliation,angel,s,020

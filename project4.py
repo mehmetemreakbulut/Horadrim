@@ -1,7 +1,17 @@
+import os
 
 ## create type
-def createType(stat):
 
+def createEmptyFile(file):
+    for pageNumber in range(4):
+        file.write("#" + str(pageNumber) + "#00000000\n")
+        for recordNumber in range(8):
+            file.write("$" + str(recordNumber) + "$")
+            for i in range(12):
+                file.write(" " * 20)
+            file.write("\n")
+
+def createType(stat):
 
     st = stat
     words = st.split()
@@ -21,7 +31,6 @@ def createType(stat):
         except:
             print("there is an error")
             continue
-    print("aa")
     f.close()
     numberOfField = words[3]
     primaryKeyOrder = words[4]
@@ -55,53 +64,99 @@ def createType(stat):
             pKey=1 
         file.write(arg1+","+typeToWrite+","+arg2+","+position+","+str(pKey)+"\n")
     try:
-        createF = open(f"000_{typeName}.txt","x")
-        count = open("file_name_count.txt","w")
-        count.write(typeName+","+"1")
-        count.close()
+        fileObject = open(f"000_{typeName}.txt","x")
+        # update File Object Header.
+        primaryKeyToWrite = str(int(primaryKeyOrder) - 1).zfill(2)
+        fileObject.write("!000!" + typeName + "!" + primaryKeyToWrite + "!00!0000\n")
+        createEmptyFile(fileObject)
+        countFileObject = open("file_name_count.txt","a")
+        countFileObject.write(typeName+","+"1")
+        countFileObject.close()
     except:
-        pass
-    createF.close()
+        print("Burada hata var, initial file olusturma")
+    fileObject.close()
     print("creating process is done")
     file.close()
-## delete type
-def deleteType(stat):
-    st = stat
-    words = stat.split()
-    typeName = words[2]
-    f = open("system_cat.txt","r")
-    lines = f.readlines()
-    
-    print(len(lines))
-    x=0
-    while x < len(lines):
-            print(x)
-            print(lines)
-            line = lines[x].split(",")
-         
-            if(line[1]==typeName):
-                print("Field of Type")
-                del lines[x]
-                
-                continue
-            else:
-                x=x+1
-                continue
-  
 
+def deleteFromCountFile(typeName):
+    try:
+        f = open("file_name_count.txt", "r")
+    except:
+        print("File could not be opened (file_name_count)")
+
+    lines = f.readlines()
+    x = 0
+
+    while x < len(lines):
+        line = lines[x].split(",")
+        if(line[0] == typeName):
+            del lines[x]
+            continue
+        else:
+            x += 1
     f.close()
 
-    new_file = open("system_cat.txt", "w")
+    try:
+        new_file = open("file_name_count.txt", "w")     # This time opening with "w"
+    except:
+        print("New file could not be opened (file_name_count)")
+    
+    for line in lines:
+        new_file.write(line)
+    new_file.close()
+
+def deleteFromCatalogFile(typeName):
+    try:
+        f = open("system_cat.txt","r")
+    except:
+        print("File could not be opened (system_cat)")
+
+    lines = f.readlines()
+    x=0
+    while x < len(lines):
+        line = lines[x].split(",")
+        
+        if(line[1]==typeName):
+            del lines[x]
+            continue
+        else:
+            x=x+1
+    f.close()
+
+    try:
+        new_file = open("system_cat.txt", "w")  # Again, this time opening with "w"
+    except:
+        print("File could not be opened (system_cat)")
     for line in lines:
         new_file.write(line)
 
     new_file.close()
 
+def deleteAllDataFiles(typeName):
+    for i in range(1000):
+        indexToCheck = str(i).zfill(3)
+        try:
+            os.remove(indexToCheck + "_" + typeName + ".txt")
+        except:
+            continue
+
+## delete type
+def deleteType(stat):
+    st = stat
+    words = stat.split()
+    typeName = words[2]
+    deleteFromCatalogFile(typeName)
+    deleteFromCountFile(typeName)
+    deleteAllDataFiles(typeName)
+    print("Successfully deleted")
+
+def ListTypes(statement):
+    pass
 
 ### run the file
 def main():
     create = "create type angel 3 1 name str alias str affiliation str"
-    createType(create)
-    #deleteType("delete type angel")
+    #createType(create)
+    deleteType("delete type angel")
 if __name__ == "__main__":
     main()
