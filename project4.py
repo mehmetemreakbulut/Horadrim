@@ -150,13 +150,21 @@ def deleteType(stat):
     deleteAllDataFiles(typeName)
     print("Successfully deleted")
 
-def ListTypes(statement):
-    pass
+def ListTypes():
+    try:
+        f = open("file_name_count.txt","r")
+    except:
+        print("File could not be opened (file_name_count)")
+    
+    lines = f.readlines()
+    for line in lines:
+        print(line.split(",")[0])
 
 ### run the file
 def main():
     create = "create type angel 3 1 name str alias str affiliation str"
     #createType(create)
-    deleteType("delete type angel")
+    #deleteType("delete type angel")
+    ListTypes()
 if __name__ == "__main__":
     main()

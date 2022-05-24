@@ -1,0 +1,2 @@
+angel,1
+Evil,1
