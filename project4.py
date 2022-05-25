@@ -98,7 +98,7 @@ def createType(stat):
     createEmptyFile(fileObject)
     createEmptyTreeFile(typeName)
     countFileObject = open("file_name_count.txt","a")
-    countFileObject.write(typeName+","+"1")
+    countFileObject.write(typeName+","+"1"+"\n")
     countFileObject.close()
     #except:
     #    print("Burada hata var, initial file olusturma")
@@ -219,6 +219,7 @@ def createRecord(statement):
     valueToInsert = valueToInsert.ljust(240)
 
     primaryValue = fields[int(primaryKey)]
+   
     tree = trees[typeName]
     if(tree.retrieve(primaryValue) != None):
         print("Key already exists")
@@ -234,35 +235,41 @@ def createRecord(statement):
     numberOfFiles = 0
     for line in lines:
         if(line.split(",")[0] == typeName):
-            numberOfFiles = line.split(",")[1]
-
+            numberOfFiles = line.split(",")[1][:-1]
+    print(numberOfFiles)
     for i in range(int(numberOfFiles)):
         position = str(i).zfill(3)
         fileName = position + "_" + typeName + ".txt"
+        print(fileName)
         try:
             f = open(fileName,"r+")
         except:
             print("File could not be opened ()")
         fileHeader = f.readline()
+        all = f.readline()
+        print(all)
+        print(fileHeader.split("!"))
         emptyPlaces = fileHeader.split("!")[5]
+        
         for j in range(4):
+            
             if(emptyPlaces[j] == "0"):
-                f.seek(22 + 1964 * j)
+                f.seek(23 + 1973 * j) #22+1964 for MacOS
                 emptyPageHeader = f.readline()
                 #print(emptyPageHeader)
                 emptyRecords = emptyPageHeader.split("#")[2]
                 #print(emptyRecords)
                 for k in range(8):
                     if(emptyRecords[k] == "0"):
-                        index = (22 + 1964 * j + 12 + 244 * k)
+                        index = (23 + 1973 * j + 13 + 245 * k) # 22 + 1964 * j + 12 + 244 * k for MacOS
                         f.seek(index)
                         value = "$" + str(k) + "$" + valueToInsert + "\n"
                         print(value)
                         f.write(value)
-                        indexPageHeader = (22 + 1964 * j + 3 + k)
+                        indexPageHeader = (23 + 1973 * j + 3 + k) #22 + 1964 * j + 3 + k for MacOS
                         f.seek(indexPageHeader)
                         f.write("1")
-                        indexPageHeader = (22 + 1964 * j + 3)
+                        indexPageHeader = (23 + 1973 * j + 3) #22 + 1964 * j + 3 for MacOS
                         f.seek(indexPageHeader)
                         emptyRecordsAfter = f.read(8)
                         Full = True
@@ -274,29 +281,263 @@ def createRecord(statement):
                             indexFileHeader = (17 + j)
                             f.seek(indexFileHeader)
                             f.write("1")
+
+                        
+                        recordNumberFileHeader = 14
+                        f.seek(14)
+                        recordNumber = int(f.read(2)) + 1
+                        f.seek(14)
+                        f.write(str(recordNumber).zfill(2))
+
                         # Insert to tree
                         tree = trees[typeName]
                         tree.insert(primaryValue , position + str(j) + str(k))
-                        return
-        # Open new file.
+                        f.close()
+                        return True
+    # Open new file.
+    newNumOfFiles = int(numberOfFiles)+1
+    NewFile = newNumOfFiles.zfill(3)+"_"+typeName+".txt"
+    new = open(NewFile,"x")
+    new.close()
+    newWrite = open(NewFile,"w")
+    newFileHeader ="!"+numberOfFiles.zfill(3)+"!"+typeName+"!"+ str(primaryKey).zfill(2) + "!00!0000\n"  ##Record number is initialized as "00" but after creating it must be updated
+    newWrite.write(newFileHeader)
+    createEmptyFile(newWrite)
 
 
 
+    countFile = open("file_name_count.txt","r")
+    lines = countFile.readlines()
+    countFile.close()
+    lineCount = 0
+    while(lineCount<len(lines)):
+        if(lines[lineCount].split(",")[0] == typeName):
+            lines[lineCount]=typeName+","+str(newNumOfFiles)
+        lineCount = lineCount+1
+    countWrite = open("file_name_count.txt","w")
+    for line in lines:
+        countWrite.write(line)
+    countWrite.close()
 
+    return False
+
+def deleteRecord(statement):
+    array = statement.split()
+    typeName = array[2]
+    primaryKey = array[3]
+    try:
+        f = open("system_cat.txt","r")
+    except:
+        print("File could not be opened (system_cat)")
+
+    lines = f.readlines()
+    f.close()
+    hasType=False
+    for line in lines:
+        elements = line.split(",")
+        if(elements[1] == typeName):
+            hasType = True
+    if(hasType==False):
+        return False
+    tree = trees[typeName]
+    value = tree.retrieve(primaryKey)[0]
+    print(value)
+    if(value == None):
+        print("Key doesn't exist")
+        return
+    file = str(value[0:3])+"_"+typeName+".txt"
+    page = int(value[3:4])
+    record = int(value[4:5])
+    try:
+        f = open(file,"r+")
+    except:
+        print("Can not open to file to delete record")
+        return
+    
+    index = (23 + 1973 * page + 13 + 245 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS
+    f.seek(index)
+    valueToInsert=""
+    value = "$" + str(record) + "$" + valueToInsert.ljust(240) + "\n"
+    f.write(value)
+    indexPageHeader = (23 + 1973 * page + 3 + record) #22 + 1964 * j + 3 + k for MacOS
+    f.seek(indexPageHeader)
+    f.write("0")      
+    
+    indexFileHeader = (23 + 1973 * page + 3) #22 + 1964 * j + 3 for MacOS
+    f.seek(indexFileHeader)
+    emptyRecordsAfter = f.read(8)
+    Full = True
+    for l in range(len(emptyRecordsAfter)):
+        if(emptyRecordsAfter[l] == "1"):
+            Full = False
+            break
+    if(Full):
+        indexFileHeader = (17 + page)
+        f.seek(indexFileHeader)
+        f.write("0")
+    f.seek(17)
+    fileHeader = f.read(4)
+    if(fileHeader=="0000"):
+        f.close()
+        os.remove(file)
+    countFile = open("file_name_count.txt","r")
+    lines = countFile.readlines()
+    countFile.close()
+    lineCount = 0
+    
+    numberOfFiles = 0
+    for line in lines:
+        if(line.split(",")[0] == typeName):
+            numberOfFiles = line.split(",")[1]
+    print(numberOfFiles)
+    newNumOfFiles = int(numberOfFiles)-1
+
+    lineCount = 0
+    while(lineCount<len(lines)):
+        if(lines[lineCount].split(",")[0] == typeName):
+            lines[lineCount]=typeName+","+str(newNumOfFiles)+"\n"
+        lineCount = lineCount+1
+    countWrite = open("file_name_count.txt","w")
+    for line in lines:
+        countWrite.write(line)
+    countWrite.close()
+
+    tree.delete(primaryKey)
+
+def updateRecord(statement):
+    array = statement.split()
+    typeName = array[2]
+    primaryKey = array[3]
+    fields = []
+    global trees
+    try:
+        f = open("system_cat.txt","r")
+    except:
+        print("File could not be opened (system_cat)")
+    
+    lines = f.readlines()
+    f.close()
+    numberOfFields = 0
+    hasType=False
+    for line in lines:
+        elements = line.split(",")
+        if(elements[1] == typeName):
+            numberOfFields += 1
+            hasType = True
+    if(hasType==False):
+        print("No Type")
+        return
+    if(numberOfFields!=(len(array)-4)):
+        print("fields not enough")
+        return
+    valueToInsert = ""
+    for i in range(numberOfFields):
+        element = array[i + 4]
+        fields.append(element)
+        element = element.ljust(20)
+        valueToInsert += element
+    valueToInsert = valueToInsert.ljust(240)
+
+    
+    tree = trees[typeName]
+    value = tree.retrieve(primaryKey)[0]
+    print(value)
+    if(value == None):
+        print("Key doesn't exist")
+        return
+    file = str(value[0:3])+"_"+typeName+".txt"
+    page = int(value[3:4])
+    record = int(value[4:5])
+    try:
+        f = open(file,"r+")
+    except:
+        print("Can not open to file to update record")
+        return
+    
+    index = (23 + 1973 * page + 13 + 245 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS
+    f.seek(index)
+ 
+    value = "$" + str(record) + "$" + valueToInsert.ljust(240) + "\n"
+    f.write(value)
+
+def searchRecord(statement):
+    array = statement.split()
+    typeName =  array[2]
+    primaryKey = array[3]
+    print(primaryKey)
+    global trees
+    try:
+        f = open("system_cat.txt","r")
+    except:
+        print("File could not be opened (system_cat)")
+    
+    lines = f.readlines()
+    f.close()
+    numberOfFields = 0
+    hasType=False
+    for line in lines:
+        elements = line.split(",")
+        if(elements[1] == typeName):
+            numberOfFields += 1
+            hasType = True
+    if(hasType==False):
+        print("No Type")
+        return
+    tree = trees[typeName]
+    print(tree.retrieve(primaryKey))
+    value = tree.retrieve(primaryKey)
+    if(value==None):
+        print("Key doesn't exist to search record")
+        return
+    value = value[0]
+    file = str(value[0:3])+"_"+typeName+".txt"
+    page = int(value[3:4])
+    record = int(value[4:5])
+    try:
+        f = open(file,"r")
+    except:
+        print("Can not open to file to search record")
+        return
+    
+    index = (23 + 1973 * page + 13 + 245 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS
+    f.seek(index+3)
+    
+    
+    returnString = ""
+  
+    for i in range(numberOfFields-1):
+        field = f.read(20).strip()
+        returnString = returnString + field + " "
+        
+    field = f.read(20).strip()
+    returnString = returnString + field + " "
+    print(returnString)
+    return returnString
 
 ### run the file
 def main():
     create = "create type angel 3 1 name str alias str affiliation str"
-    createRecordString = "create record angel denemeler Archangkerkrce HighHeavens"
+    
     initializeDatabase()
-    createRecord(createRecordString)
-    closeDatabase()
+    ##CREATE
+    createRecordString = "create record angel newFile Archangkerkrce HighHeavens"
+    deleteRecordString = "delete record angel newFile"
+    updateRecordString = "update record angel newFile newFile AspectOfWisdom Horadrim"
+    searchRecordString = "search record angel newFile"
+    #Created=createRecord(createRecordString)
+    #if(not(Created)):
+    #   createRecord(createRecordString)
+
+    ##CREATE
+    
     #createRecord(createRecordString)
     #closeDatabase()
     #createType(create)
     #deleteType("delete type angel")
-
-
+    #updateRecord(updateRecordString)
+    searchRecord(searchRecordString)
+    #deleteRecord(deleteRecordString)
+    closeDatabase()
 if __name__ == "__main__":
     main()
 
