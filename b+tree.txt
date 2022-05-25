@@ -1,0 +1,4 @@
+Level 0konya -->	 current -> 2	 parent -> None
+Level 1izmir|kayseri -->	 current -> 1	 parent -> 2
+Level 1konya|zonguldak -->	 current -> 3	 parent -> 2
+[izmir,035]->[kayseri,038]->[konya,042]->[zonguldak,069]->Last node
