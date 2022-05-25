@@ -305,7 +305,6 @@ class BPlusTree(object):
             height = queue.pop(0)
             
             if not isinstance(node, LeafNode):
-                print(height)
                 queue += self.intersperse(node.values, height + 1)
             file.write('Level ' + str(height)+ '|'.join(map(str, node.keys))+ ' -->\t current -> '+ str(node.uid)+
                   '\t parent -> '+
@@ -372,7 +371,7 @@ class BPlusTree(object):
         keysArray = []
         valuesArray = []
         pages = allData.split('->')
-        print(len(pages))
+        #print(len(pages))
         for i in range(len(pages)-1):
             object = pages[i][1:-1].split(',')
             keysArray.append(object[0])
@@ -386,7 +385,7 @@ class BPlusTree(object):
         fileWrite = open(fileName,'w')
         self.printTree(fileWrite)
         Oldarray = []
-        AllData = tree.showAllData(Oldarray)
+        AllData = self.showAllData(Oldarray)
         line=""
         for i in range(len(AllData)):
             line = line+AllData[i]
@@ -395,15 +394,15 @@ class BPlusTree(object):
 if __name__ == '__main__':
     Tree = BPlusTree(order=4)
     
-    fileName = "b+tree.txt"
-    tree = Tree.built(fileName)
+    #fileName = "b+tree.txt"
+    #tree = Tree.built(fileName)
     
     # Insert or Delete
     
-    tree.insert("konya","042")
+    #tree.insert("konya","042")
     
-    print(tree.retrieve("kayseri"))
+    #print(tree.retrieve("kayseri"))
     
 
-    tree.writeFile(fileName)
+    #tree.writeFile(fileName)
     
