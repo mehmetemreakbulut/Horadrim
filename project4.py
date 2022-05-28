@@ -49,7 +49,7 @@ def createType(stat):
     for x in f:
         try:
             line = x.split(",")
-            print(line[1])
+            #print(line[1])
             if(line[1]==typeName):
                 print("Type exists")
                 return
@@ -73,7 +73,7 @@ def createType(stat):
     
             
     ## for system catalog
-    file = open("system_cat.txt","w") 
+    file = open("system_cat.txt","a") 
     for a in range(int(numberOfField)):
         ##arg1= "{:<20}".format(fieldArray[a][0])  NO NEED TO FILL TO 20 FOR SYSTEM CATALOG
         arg1 = fieldArray[a][0]
@@ -94,7 +94,7 @@ def createType(stat):
     fileObject = open(f"000_{typeName}.txt","x")
     # update File Object Header.
     primaryKeyToWrite = str(int(primaryKeyOrder) - 1).zfill(2)
-    fileObject.write("!000!" + typeName + "!" + primaryKeyToWrite + "!00!0000\n")
+    fileObject.write("!000!" + "aaaaa" + "!" + primaryKeyToWrite + "!00!0000\n")
     createEmptyFile(fileObject)
     createEmptyTreeFile(typeName)
     countFileObject = open("file_name_count.txt","a")
@@ -179,7 +179,7 @@ def deleteType(stat):
     if(typeName in trees):
         del trees[typeName]
     print("Successfully deleted")
-def ListTypes():
+def listTypes():
     try:
         f = open("file_name_count.txt","r")
     except:
@@ -233,22 +233,23 @@ def createRecord(statement):
     lines = f.readlines()
     f.close()
     numberOfFiles = 0
+    
     for line in lines:
         if(line.split(",")[0] == typeName):
-            numberOfFiles = line.split(",")[1][:-1]
-    print(numberOfFiles)
+            numberOfFiles = line.split(",")[1] # line.split(",")[1][:-1] For windows
+    #print(numberOfFiles)
     for i in range(int(numberOfFiles)):
         position = str(i).zfill(3)
         fileName = position + "_" + typeName + ".txt"
-        print(fileName)
+        #print(fileName)
         try:
             f = open(fileName,"r+")
         except:
             print("File could not be opened ()")
         fileHeader = f.readline()
         all = f.readline()
-        print(all)
-        print(fileHeader.split("!"))
+        #print(all)
+        #print(fileHeader.split("!"))
         emptyPlaces = fileHeader.split("!")[5]
         
         for j in range(4):
@@ -256,20 +257,20 @@ def createRecord(statement):
             if(emptyPlaces[j] == "0"):
                 f.seek(23 + 1973 * j) #22+1964 for MacOS
                 emptyPageHeader = f.readline()
-                #print(emptyPageHeader)
-                emptyRecords = emptyPageHeader.split("#")[2]
+                #print(emptyPageHeader.split("#"))
+                emptyRecords = emptyPageHeader.split("#")[1]
                 #print(emptyRecords)
                 for k in range(8):
                     if(emptyRecords[k] == "0"):
-                        index = (23 + 1973 * j + 13 + 245 * k) # 22 + 1964 * j + 12 + 244 * k for MacOS
+                        index = (22 + 1964 * j + 12 + 244 * k) # 22 + 1964 * j + 12 + 244 * k for MacOS  // 23 + 1973 * j + 13 + 245 * k For Windows
                         f.seek(index)
                         value = "$" + str(k) + "$" + valueToInsert + "\n"
-                        print(value)
+                        #print(value)
                         f.write(value)
-                        indexPageHeader = (23 + 1973 * j + 3 + k) #22 + 1964 * j + 3 + k for MacOS
+                        indexPageHeader = (22 + 1964 * j + 3 + k) #22 + 1964 * j + 3 + k for MacOS  // 23 + 1973 * j + 3 + k For windows
                         f.seek(indexPageHeader)
                         f.write("1")
-                        indexPageHeader = (23 + 1973 * j + 3) #22 + 1964 * j + 3 for MacOS
+                        indexPageHeader = (22 + 1964 * j + 3) #22 + 1964 * j + 3 for MacOS // 23 + 1973 * j + 3 for windows
                         f.seek(indexPageHeader)
                         emptyRecordsAfter = f.read(8)
                         Full = True
@@ -340,11 +341,13 @@ def deleteRecord(statement):
     if(hasType==False):
         return False
     tree = trees[typeName]
-    value = tree.retrieve(primaryKey)[0]
+    value = tree.retrieve(primaryKey)
     print(value)
     if(value == None):
         print("Key doesn't exist")
         return
+    value = tree.retrieve(primaryKey)[0]
+
     file = str(value[0:3])+"_"+typeName+".txt"
     page = int(value[3:4])
     record = int(value[4:5])
@@ -354,16 +357,16 @@ def deleteRecord(statement):
         print("Can not open to file to delete record")
         return
     
-    index = (23 + 1973 * page + 13 + 245 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS
+    index = (22 + 1964 * page + 12 + 244 * record) # 22 + 1964 * page + 12 + 244 * record for MacOS // 23 + 1973 * page + 13 + 245 * record for windows
     f.seek(index)
     valueToInsert=""
     value = "$" + str(record) + "$" + valueToInsert.ljust(240) + "\n"
     f.write(value)
-    indexPageHeader = (23 + 1973 * page + 3 + record) #22 + 1964 * j + 3 + k for MacOS
+    indexPageHeader = (22 + 1964 * page + 3 + record) #22 + 1964 * j + 3 + k for MacOS // 23 + 1973 * page + 3 + record for Windows
     f.seek(indexPageHeader)
     f.write("0")      
     
-    indexFileHeader = (23 + 1973 * page + 3) #22 + 1964 * j + 3 for MacOS
+    indexFileHeader = (22 + 1964 * page + 3 ) #22 + 1964 * j + 3 for MacOS // 23 + 1973 * page + 3 for Windows
     f.seek(indexFileHeader)
     emptyRecordsAfter = f.read(8)
     Full = True
@@ -440,11 +443,11 @@ def updateRecord(statement):
 
     
     tree = trees[typeName]
-    value = tree.retrieve(primaryKey)[0]
-    print(value)
+    value = tree.retrieve(primaryKey)
     if(value == None):
         print("Key doesn't exist")
         return
+    value = tree.retrieve(primaryKey)[0]
     file = str(value[0:3])+"_"+typeName+".txt"
     page = int(value[3:4])
     record = int(value[4:5])
@@ -454,7 +457,7 @@ def updateRecord(statement):
         print("Can not open to file to update record")
         return
     
-    index = (23 + 1973 * page + 13 + 245 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS
+    index = (22 + 1964 * page + 12 + 244 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS // 23 + 1973 * page + 13 + 245 * record for Windows
     f.seek(index)
  
     value = "$" + str(record) + "$" + valueToInsert.ljust(240) + "\n"
@@ -464,12 +467,13 @@ def searchRecord(statement):
     array = statement.split()
     typeName =  array[2]
     primaryKey = array[3]
-    print(primaryKey)
+    #print(primaryKey)
     global trees
     try:
         f = open("system_cat.txt","r")
     except:
-        print("File could not be opened (system_cat)")
+        #print("File could not be opened (system_cat)")
+        return ("Error: File could not be opened (system_cat)")
     
     lines = f.readlines()
     f.close()
@@ -484,11 +488,11 @@ def searchRecord(statement):
         print("No Type")
         return
     tree = trees[typeName]
-    print(tree.retrieve(primaryKey))
+    #print(tree.retrieve(primaryKey))
     value = tree.retrieve(primaryKey)
     if(value==None):
-        print("Key doesn't exist to search record")
-        return
+        #print("Key doesn't exist to search record")
+        return ("Error: Key doesn't exist to search record ")
     value = value[0]
     file = str(value[0:3])+"_"+typeName+".txt"
     page = int(value[3:4])
@@ -496,10 +500,10 @@ def searchRecord(statement):
     try:
         f = open(file,"r")
     except:
-        print("Can not open to file to search record")
-        return
+        #print("Can not open to file to search record")
+        return ("Error: Can not open to file to search record")
     
-    index = (23 + 1973 * page + 13 + 245 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS
+    index = (22 + 1964 * page + 12 + 244 * record ) # 22 + 1964 * j + 12 + 244 * k for MacOS // 23 + 1973 * page + 13 + 245 * record for windows
     f.seek(index+3)
     
     
@@ -511,19 +515,205 @@ def searchRecord(statement):
         
     field = f.read(20).strip()
     returnString = returnString + field + " "
-    print(returnString)
+    #print(returnString)
     return returnString
+
+def listRecord (typeName):
+    records = []
+    try:
+        f = open("system_cat.txt","r")
+    except:
+        print("File could not be opened (system_cat)")
+    lines = f.readlines()
+    f.close()
+    numberOfFields = 0
+    hasType=False
+    for line in lines:
+        elements = line.split(",")
+        if(elements[1] == typeName):
+            numberOfFields += 1
+            hasType = True 
+    if(hasType==False):
+        print("No Type")
+        return
+    
+    global trees
+    try:
+        tree = trees[typeName]
+    except:
+        print("There is no such type exists")
+        return
+    node = tree.getLeftmostLeaf()
+    while node:
+        keys = node.keys
+        for key in keys:
+            values = []
+            place = tree.retrieve(key)[0]
+            fileNumber = place[0:3]
+            page = int(place[3])
+            record = int(place[4])
+            file = fileNumber+"_"+typeName+".txt"
+            try: 
+                f = open(file,"r")
+            except:
+                print("Can not open to file to list record")
+                return
+            index = (22 + 1964 * page + 12 + 244 * record)
+            f.seek(index+3)
+            returnString = ""
+            for i in range(numberOfFields-1):
+                field = f.read(20).strip()
+                values.append(field)
+                returnString = returnString + field + " "
+                
+            field = f.read(20).strip()
+            values.append(field)
+            returnString = returnString + field + " "
+            records.append(values)
+            f.close()
+        node = node.nextLeaf
+    return records
+    #arr = []
+    #print(tree.showAllData(arr))
+    #print(arr)
+
+def findFieldIndexWithName(name, typeName):
+    try:
+        f = open("system_cat.txt","r")
+    except:
+        print("File could not be opened (system_cat)")
+    lines = f.readlines()
+    f.close()
+    numberOfFields = 0
+    hasType=False
+    for line in lines:
+        elements = line.split(",")
+        if(elements[1] == typeName):
+            numberOfFields += 1
+            hasType = True 
+            if(elements[0] == name):
+                return int(elements[3])
+    if(hasType==False):
+        print("No Type")
+        return
+
+def filterRecord(typeName, condition):
+
+    records = listRecord(typeName)
+    results = []
+    fieldToCheckFor = ""
+    conditionToCheckFor = ""
+    if("=" in condition):
+        fieldToCheckFor = condition[0:condition.index("=")]
+        conditionToCheckFor = condition[condition.index("=")+1:]
+        indexToCheck = findFieldIndexWithName(fieldToCheckFor, typeName)
+        if(indexToCheck == None):
+            print("There is no such field for that type filtering")
+            return
+        for element in records:
+            if(element[indexToCheck] == conditionToCheckFor):
+                results.append(element)
+    if("<" in condition):
+        fieldToCheckFor = condition[0:condition.index("<")]
+        conditionToCheckFor = condition[condition.index("<")+1:]
+        indexToCheck = findFieldIndexWithName(fieldToCheckFor, typeName)
+        if(indexToCheck == None):
+            print("There is no such field for that type filtering")
+            return
+        for element in records:
+            if(element[indexToCheck] < conditionToCheckFor):
+                results.append(element)
+    if(">" in condition):
+        fieldToCheckFor = condition[0:condition.index(">")]
+        conditionToCheckFor = condition[condition.index(">")+1:]
+        indexToCheck = findFieldIndexWithName(fieldToCheckFor, typeName)
+        if(indexToCheck == None):
+            print("There is no such field for that type filtering")
+            return
+        for element in records:
+            if(element[indexToCheck] > conditionToCheckFor):
+                results.append(element)
+    return results
 
 ### run the file
 def main():
-    create = "create type angel 3 1 name str alias str affiliation str"
-    
+
     initializeDatabase()
+    while True:
+        inp = input()
+        if (inp == ""):
+            break
+        fields = inp.split()
+        numberOfFields = len(fields)
+        operation = fields[0]+fields[1]
+        if(operation == "createtype"):
+            if(numberOfFields < 7):
+                print("Input cannot have less than 1 fields for create type")
+                continue
+            createType(inp)
+        elif(operation == "deletetype"):
+            if(numberOfFields != 3):
+                print("Input is not in correct structure")
+                continue
+            deleteType(inp)
+        elif(operation == "listtype"):
+            if(numberOfFields != 2):
+                print("Input is not in correct structure")
+                continue
+            listTypes()
+        elif(operation == "createrecord"):
+            if(numberOfFields < 4):
+                print("Input cannot have less than 1 fields for create record")
+                continue
+            createRecord(inp)
+        elif(operation == "deleterecord"):
+            if(numberOfFields != 4):
+                print("Input is not in correct structure")
+                continue
+            deleteRecord(inp)
+        elif(operation == "updaterecord"):
+            if(numberOfFields < 4):
+                print("Input cannot have less than 1 fields for delete record")
+                continue
+            updateRecord(inp)
+        elif(operation == "searchrecord"):
+            if(numberOfFields != 4):
+                print("Input is not in correct structure")
+                continue
+            result = searchRecord(inp)
+            print(result)
+        elif(operation == "listrecord"):
+            if(numberOfFields != 3):
+                print("Input is not in correct structure")
+                continue
+            typeName = fields[2]
+            records = listRecord(typeName)
+            if(records == None):
+                continue
+            for entry in records:
+                for field in entry:
+                    print(field, end = " ")
+                print()
+        elif(operation == "filterrecord"):
+            if(numberOfFields != 4):
+                print("Input is not in correct structure")
+                continue
+            typeName = fields[2]
+            condition = fields[3]
+            records = filterRecord(typeName, condition)
+            for entry in records:
+                for field in entry:
+                    print(field, end = " ")
+                print()
+
+    closeDatabase()
+    #create = "create type angel 3 1 name str alias str affiliation str"
+    
     ##CREATE
-    createRecordString = "create record angel newFile Archangkerkrce HighHeavens"
-    deleteRecordString = "delete record angel newFile"
-    updateRecordString = "update record angel newFile newFile AspectOfWisdom Horadrim"
-    searchRecordString = "search record angel newFile"
+    #createRecordString = "create record angel angelaa Archangkerkrce HighHeavens"
+    #deleteRecordString = "delete record angel newFile"
+    #updateRecordString = "update record angel newFile newFile AspectOfWisdom Horadrim"
+    #searchRecordString = "search record angel newFile"
     #Created=createRecord(createRecordString)
     #if(not(Created)):
     #   createRecord(createRecordString)
@@ -535,17 +725,12 @@ def main():
     #createType(create)
     #deleteType("delete type angel")
     #updateRecord(updateRecordString)
-    searchRecord(searchRecordString)
+    #searchRecord(searchRecordString)
     #deleteRecord(deleteRecordString)
-    closeDatabase()
+    #print(listRecord("angel"))
+    #ListTypes()
+    #print(filterRecord("angel" , "affiliation=HighHeavens"))
+    #print(findFieldIndexWithName("a", "eviaal"))
+    #closeDatabase()
 if __name__ == "__main__":
     main()
-
-    #createType(create)
-    #deleteType("delete type angel")
-    #ListTypes()
-    #deneme = BPlusTree(order = 4)
-    #fileName = "b+tree.txt"
-    #tree = deneme.built(fileName)
-    #tree.insert("adanaa", "002")
-    #tree.writeFile(fileName)

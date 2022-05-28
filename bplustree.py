@@ -296,7 +296,7 @@ class BPlusTree(object):
 
     def printTree(self,file):
         if self.root.isEmpty():
-            print('The bpt+ Tree is empty!')
+            #print('The bpt+ Tree is empty!')
             return
         queue = [self.root, 0]  # Node, Height... Not systematic but it works
 
