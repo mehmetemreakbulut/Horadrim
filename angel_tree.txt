@@ -1,4 +1,4 @@
-Level 0dsadas -->	 current -> 2	 parent -> None
-Level 1amcalar|denemeler -->	 current -> 1	 parent -> 2
-Level 1dsadas|merhaba -->	 current -> 3	 parent -> 2
-[amcalar,00002]->[denemeler,00003]->[dsadas,00000]->[merhaba,00001]->Last node
+Level 0angelb -->	 current -> 3	 parent -> None
+Level 1angel2|angelaa -->	 current -> 2	 parent -> 3
+Level 1angelb|angelmer|newFileab -->	 current -> 4	 parent -> 3
+[angel2,00002]->[angelaa,00004]->[angelb,00001]->[angelmer,00003]->[newFileab,00000]->Last node
