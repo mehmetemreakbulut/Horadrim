@@ -49,7 +49,7 @@ def createType(stat):
     for x in f:
         try:
             line = x.split(",")
-            print(line[1])
+            #print(line[1])
             if(line[1]==typeName):
                 print("Type exists")
                 return
@@ -179,7 +179,7 @@ def deleteType(stat):
     if(typeName in trees):
         del trees[typeName]
     print("Successfully deleted")
-def ListTypes():
+def listTypes():
     try:
         f = open("file_name_count.txt","r")
     except:
@@ -341,11 +341,13 @@ def deleteRecord(statement):
     if(hasType==False):
         return False
     tree = trees[typeName]
-    value = tree.retrieve(primaryKey)[0]
+    value = tree.retrieve(primaryKey)
     print(value)
     if(value == None):
         print("Key doesn't exist")
         return
+    value = tree.retrieve(primaryKey)[0]
+
     file = str(value[0:3])+"_"+typeName+".txt"
     page = int(value[3:4])
     record = int(value[4:5])
@@ -441,11 +443,11 @@ def updateRecord(statement):
 
     
     tree = trees[typeName]
-    value = tree.retrieve(primaryKey)[0]
-    print(value)
+    value = tree.retrieve(primaryKey)
     if(value == None):
         print("Key doesn't exist")
         return
+    value = tree.retrieve(primaryKey)[0]
     file = str(value[0:3])+"_"+typeName+".txt"
     page = int(value[3:4])
     record = int(value[4:5])
@@ -465,12 +467,13 @@ def searchRecord(statement):
     array = statement.split()
     typeName =  array[2]
     primaryKey = array[3]
-    print(primaryKey)
+    #print(primaryKey)
     global trees
     try:
         f = open("system_cat.txt","r")
     except:
-        print("File could not be opened (system_cat)")
+        #print("File could not be opened (system_cat)")
+        return ("Error: File could not be opened (system_cat)")
     
     lines = f.readlines()
     f.close()
@@ -485,11 +488,11 @@ def searchRecord(statement):
         print("No Type")
         return
     tree = trees[typeName]
-    print(tree.retrieve(primaryKey))
+    #print(tree.retrieve(primaryKey))
     value = tree.retrieve(primaryKey)
     if(value==None):
-        print("Key doesn't exist to search record")
-        return
+        #print("Key doesn't exist to search record")
+        return ("Error: Key doesn't exist to search record ")
     value = value[0]
     file = str(value[0:3])+"_"+typeName+".txt"
     page = int(value[3:4])
@@ -497,8 +500,8 @@ def searchRecord(statement):
     try:
         f = open(file,"r")
     except:
-        print("Can not open to file to search record")
-        return
+        #print("Can not open to file to search record")
+        return ("Error: Can not open to file to search record")
     
     index = (22 + 1964 * page + 12 + 244 * record ) # 22 + 1964 * j + 12 + 244 * k for MacOS // 23 + 1973 * page + 13 + 245 * record for windows
     f.seek(index+3)
@@ -512,7 +515,7 @@ def searchRecord(statement):
         
     field = f.read(20).strip()
     returnString = returnString + field + " "
-    print(returnString)
+    #print(returnString)
     return returnString
 
 def listRecord (typeName):
@@ -634,14 +637,83 @@ def filterRecord(typeName, condition):
 
 ### run the file
 def main():
-    create = "create type angel 3 1 name str alias str affiliation str"
-    
+
     initializeDatabase()
+    while True:
+        inp = input()
+        if (inp == ""):
+            break
+        fields = inp.split()
+        numberOfFields = len(fields)
+        operation = fields[0]+fields[1]
+        if(operation == "createtype"):
+            if(numberOfFields < 7):
+                print("Input cannot have less than 1 fields for create type")
+                continue
+            createType(inp)
+        elif(operation == "deletetype"):
+            if(numberOfFields != 3):
+                print("Input is not in correct structure")
+                continue
+            deleteType(inp)
+        elif(operation == "listtype"):
+            if(numberOfFields != 2):
+                print("Input is not in correct structure")
+                continue
+            listTypes()
+        elif(operation == "createrecord"):
+            if(numberOfFields < 4):
+                print("Input cannot have less than 1 fields for create record")
+                continue
+            createRecord(inp)
+        elif(operation == "deleterecord"):
+            if(numberOfFields != 4):
+                print("Input is not in correct structure")
+                continue
+            deleteRecord(inp)
+        elif(operation == "updaterecord"):
+            if(numberOfFields < 4):
+                print("Input cannot have less than 1 fields for delete record")
+                continue
+            updateRecord(inp)
+        elif(operation == "searchrecord"):
+            if(numberOfFields != 4):
+                print("Input is not in correct structure")
+                continue
+            result = searchRecord(inp)
+            print(result)
+        elif(operation == "listrecord"):
+            if(numberOfFields != 3):
+                print("Input is not in correct structure")
+                continue
+            typeName = fields[2]
+            records = listRecord(typeName)
+            if(records == None):
+                continue
+            for entry in records:
+                for field in entry:
+                    print(field, end = " ")
+                print()
+        elif(operation == "filterrecord"):
+            if(numberOfFields != 4):
+                print("Input is not in correct structure")
+                continue
+            typeName = fields[2]
+            condition = fields[3]
+            records = filterRecord(typeName, condition)
+            for entry in records:
+                for field in entry:
+                    print(field, end = " ")
+                print()
+
+    closeDatabase()
+    #create = "create type angel 3 1 name str alias str affiliation str"
+    
     ##CREATE
-    createRecordString = "create record angel angelaa Archangkerkrce HighHeavens"
-    deleteRecordString = "delete record angel newFile"
-    updateRecordString = "update record angel newFile newFile AspectOfWisdom Horadrim"
-    searchRecordString = "search record angel newFile"
+    #createRecordString = "create record angel angelaa Archangkerkrce HighHeavens"
+    #deleteRecordString = "delete record angel newFile"
+    #updateRecordString = "update record angel newFile newFile AspectOfWisdom Horadrim"
+    #searchRecordString = "search record angel newFile"
     #Created=createRecord(createRecordString)
     #if(not(Created)):
     #   createRecord(createRecordString)
@@ -657,17 +729,8 @@ def main():
     #deleteRecord(deleteRecordString)
     #print(listRecord("angel"))
     #ListTypes()
-    print(filterRecord("angel" , "affiliation=HighHeavens"))
+    #print(filterRecord("angel" , "affiliation=HighHeavens"))
     #print(findFieldIndexWithName("a", "eviaal"))
-    closeDatabase()
+    #closeDatabase()
 if __name__ == "__main__":
     main()
-
-    #createType(create)
-    #deleteType("delete type angel")
-    #ListTypes()
-    #deneme = BPlusTree(order = 4)
-    #fileName = "b+tree.txt"
-    #tree = deneme.built(fileName)
-    #tree.insert("adanaa", "002")
-    #tree.writeFile(fileName)

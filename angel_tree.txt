@@ -1,4 +1,1 @@
-Level 0angelb -->	 current -> 3	 parent -> None
-Level 1angel2|angelaa -->	 current -> 2	 parent -> 3
-Level 1angelb|angelmer|newFileab -->	 current -> 4	 parent -> 3
-[angel2,00002]->[angelaa,00004]->[angelb,00001]->[angelmer,00003]->[newFileab,00000]->Last node
+Last node
