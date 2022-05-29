@@ -1,6 +1,6 @@
-name,evil,s,00,1
-alias,evil,s,01,0
-affiliation,evil,s,02,0
 name,angel,s,00,1
 alias,angel,s,01,0
 affiliation,angel,s,02,0
+id,test,i,00,1
+name,test,s,01,0
+deneme,test,s,02,0

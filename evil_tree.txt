@@ -1,2 +1,0 @@
-Level 0newFileab -->	 current -> 1	 parent -> None
-[newFileab,00000]->Last node
