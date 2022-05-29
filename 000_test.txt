@@ -1,8 +1,8 @@
-!000!aaaaa!00!01!0000
-#0#10000000
-$0$newFileab           merhaba             aa                                                                                                                                                                                                      
-$1$                                                                                                                                                                                                                                                
-$2$                                                                                                                                                                                                                                                
+!000!aaaaa!00!03!0000
+#0#11100000
+$0$89                  kerem               denem1                                                                                                                                                                                                  
+$1$9                   kerem2              deneme2                                                                                                                                                                                                 
+$2$101                 kerem3              deneme3                                                                                                                                                                                                 
 $3$                                                                                                                                                                                                                                                
 $4$                                                                                                                                                                                                                                                
 $5$                                                                                                                                                                                                                                                

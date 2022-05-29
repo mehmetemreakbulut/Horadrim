@@ -250,15 +250,20 @@ def createRecord(statement):
         all = f.readline()
         #print(all)
         #print(fileHeader.split("!"))
-        emptyPlaces = fileHeader.split("!")[5]
+        emptyPlaces = fileHeader.split("!")[4]
+        if(len(emptyPlaces) != 4):
+            emptyPlaces = fileHeader.split("!")[5]
         
         for j in range(4):
             
             if(emptyPlaces[j] == "0"):
-                f.seek(23 + 1973 * j) #22+1964 for MacOS
+                f.seek( 22 + 1964* j) #22+1964 for MacOS // 23 + 1973 * j For windows
                 emptyPageHeader = f.readline()
+                #print(emptyPageHeader)
                 #print(emptyPageHeader.split("#"))
                 emptyRecords = emptyPageHeader.split("#")[1]
+                if(len(emptyRecords) != 8):
+                    emptyRecords = emptyPageHeader.split("#")[2]
                 #print(emptyRecords)
                 for k in range(8):
                     if(emptyRecords[k] == "0"):
@@ -296,14 +301,15 @@ def createRecord(statement):
                         f.close()
                         return True
     # Open new file.
-    newNumOfFiles = int(numberOfFiles)+1
+    newNumOfFiles = str(int(numberOfFiles))
     NewFile = newNumOfFiles.zfill(3)+"_"+typeName+".txt"
     new = open(NewFile,"x")
     new.close()
     newWrite = open(NewFile,"w")
-    newFileHeader ="!"+numberOfFiles.zfill(3)+"!"+typeName+"!"+ str(primaryKey).zfill(2) + "!00!0000\n"  ##Record number is initialized as "00" but after creating it must be updated
+    newFileHeader ="!"+newNumOfFiles.zfill(3)+"!"+"aaaaa"+"!"+ str(primaryKey).zfill(2) + "!00!0000\n"  ##Record number is initialized as "00" but after creating it must be updated
     newWrite.write(newFileHeader)
     createEmptyFile(newWrite)
+    newWrite.close()
 
 
 
@@ -313,14 +319,14 @@ def createRecord(statement):
     lineCount = 0
     while(lineCount<len(lines)):
         if(lines[lineCount].split(",")[0] == typeName):
-            lines[lineCount]=typeName+","+str(newNumOfFiles)
+            lines[lineCount]=typeName+","+str(int(newNumOfFiles) + 1)
         lineCount = lineCount+1
     countWrite = open("file_name_count.txt","w")
     for line in lines:
         countWrite.write(line)
     countWrite.close()
 
-    return False
+    return createRecord(statement)
 
 def deleteRecord(statement):
     array = statement.split()
@@ -342,7 +348,7 @@ def deleteRecord(statement):
         return False
     tree = trees[typeName]
     value = tree.retrieve(primaryKey)
-    print(value)
+    #print(value)
     if(value == None):
         print("Key doesn't exist")
         return
@@ -378,9 +384,15 @@ def deleteRecord(statement):
         indexFileHeader = (17 + page)
         f.seek(indexFileHeader)
         f.write("0")
-    f.seek(17)
-    fileHeader = f.read(4)
-    if(fileHeader=="0000"):
+    f.seek(14)
+    numberOfEntries = f.read(2)
+    newNumberOfEntries = int(numberOfEntries) - 1
+    numberOfEntriesToWrite = str(newNumberOfEntries).zfill(2)
+    f.seek(14)
+    f.write(numberOfEntriesToWrite)
+    f.seek(14)
+    numberOfEntries = f.read(2)
+    if(numberOfEntries=="00"):
         f.close()
         os.remove(file)
     countFile = open("file_name_count.txt","r")
@@ -392,7 +404,7 @@ def deleteRecord(statement):
     for line in lines:
         if(line.split(",")[0] == typeName):
             numberOfFiles = line.split(",")[1]
-    print(numberOfFiles)
+    #print(numberOfFiles)
     newNumOfFiles = int(numberOfFiles)-1
 
     lineCount = 0
@@ -485,8 +497,7 @@ def searchRecord(statement):
             numberOfFields += 1
             hasType = True
     if(hasType==False):
-        print("No Type")
-        return
+        return ("Error: No Type")
     tree = trees[typeName]
     #print(tree.retrieve(primaryKey))
     value = tree.retrieve(primaryKey)
@@ -592,54 +603,129 @@ def findFieldIndexWithName(name, typeName):
             numberOfFields += 1
             hasType = True 
             if(elements[0] == name):
-                return int(elements[3])
+                return ([elements[3], elements[2]])
     if(hasType==False):
         print("No Type")
         return
 
 def filterRecord(typeName, condition):
-
-    records = listRecord(typeName)
+    global trees
+    tree = trees[typeName]
     results = []
     fieldToCheckFor = ""
     conditionToCheckFor = ""
     if("=" in condition):
         fieldToCheckFor = condition[0:condition.index("=")]
         conditionToCheckFor = condition[condition.index("=")+1:]
-        indexToCheck = findFieldIndexWithName(fieldToCheckFor, typeName)
-        if(indexToCheck == None):
-            print("There is no such field for that type filtering")
-            return
-        for element in records:
-            if(element[indexToCheck] == conditionToCheckFor):
-                results.append(element)
-    if("<" in condition):
+        findedField = findFieldIndexWithName(fieldToCheckFor, typeName)
+        if(findedField == None):
+            return("Error: There is no such field for that type filtering")
+        indexToCheck = int(findedField[0])
+        #isInteger = False
+        #if(findedField[1] == "i"):
+        #    isInteger = True
+        result = searchRecord("search record " + typeName + " " + conditionToCheckFor)
+        if("Error" in result):
+            return result
+        else:
+            results.append([result])
+            return results
+    elif("<" in condition):
         fieldToCheckFor = condition[0:condition.index("<")]
         conditionToCheckFor = condition[condition.index("<")+1:]
-        indexToCheck = findFieldIndexWithName(fieldToCheckFor, typeName)
-        if(indexToCheck == None):
-            print("There is no such field for that type filtering")
-            return
-        for element in records:
-            if(element[indexToCheck] < conditionToCheckFor):
-                results.append(element)
-    if(">" in condition):
+        findedField = findFieldIndexWithName(fieldToCheckFor, typeName)
+        if(findedField == None):
+            return("Error: There is no such field for that type filtering")
+        indexToCheck = int(findedField[0])
+        isInteger = False
+        if(findedField[1] == "i"):
+            isInteger = True
+        if(isInteger):
+            leftMost = tree.getLeftmostLeaf()
+            ended = False
+            while leftMost:
+                for key in leftMost.keys:
+                    if(key >= int(conditionToCheckFor)):
+                        ended = True
+                        break
+                    result = searchRecord("search record " + typeName + " " + str(key))
+                    if("Error" in result):
+                        return result
+                    else:
+                        results.append([result])
+                if(ended):
+                    break
+                leftMost = leftMost.nextLeaf
+        else:
+            leftMost = tree.getLeftmostLeaf()
+            ended = False
+            while leftMost:
+                for key in leftMost.keys:
+                    if(key >= conditionToCheckFor):
+                        ended = True
+                        break
+                    result = searchRecord("search record " + typeName + " " + key)
+                    if("Error" in result):
+                        return result
+                    else:
+                        results.append([result])
+                if(ended):
+                    break
+                leftMost = leftMost.nextLeaf
+    elif(">" in condition):
         fieldToCheckFor = condition[0:condition.index(">")]
         conditionToCheckFor = condition[condition.index(">")+1:]
-        indexToCheck = findFieldIndexWithName(fieldToCheckFor, typeName)
-        if(indexToCheck == None):
-            print("There is no such field for that type filtering")
-            return
-        for element in records:
-            if(element[indexToCheck] > conditionToCheckFor):
-                results.append(element)
+        findedField = findFieldIndexWithName(fieldToCheckFor, typeName)
+        if(findedField == None):
+            return("Error: There is no such field for that type filtering")
+        indexToCheck = int(findedField[0])
+        isInteger = False
+        if(findedField[1] == "i"):
+            isInteger = True
+        if(isInteger):
+            rightMost = tree.getRightmostLeaf()
+            ended = False
+            while rightMost:
+                #print(rightMost.keys)
+                for key in rightMost.keys[::-1]:
+                    if(key <= int(conditionToCheckFor)):
+                        ended = True
+                        break
+                    result = searchRecord("search record " + typeName + " " + str(key))
+                    if("Error" in result):
+                        return result
+                    else:
+                        results.append([result])
+                if(ended):
+                    break
+                rightMost = rightMost.prevLeaf
+        else:
+            rightMost = tree.getRightmostLeaf()
+            ended = False
+            while rightMost:
+                for key in rightMost.keys:
+                    if(key <= conditionToCheckFor):
+                        ended = True
+                        break
+                    result = searchRecord("search record " + typeName + " " + key)
+                    if("Error" in result):
+                        return result
+                    else:
+                        results.append([result])
+                if(ended):
+                    break
+                rightMost = rightMost.prevLeaf
     return results
-
 ### run the file
 def main():
 
     initializeDatabase()
     while True:
+    #for i in range(0, 1):
+        #inp = "create record angel Tyrael" + str(i) + " a a " + str(i)
+        #inp = "create type angel 4 1 name str alias str affiliation str deneme int"
+        #inp = "delete type angel"
+        #inp = "filter record angel deneme<100"
         inp = input()
         if (inp == ""):
             break
@@ -701,6 +787,9 @@ def main():
             typeName = fields[2]
             condition = fields[3]
             records = filterRecord(typeName, condition)
+            if("Error" in records):
+                print(records)
+                continue
             for entry in records:
                 for field in entry:
                     print(field, end = " ")

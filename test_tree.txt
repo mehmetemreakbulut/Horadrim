@@ -1,0 +1,2 @@
+Level 09|89|101 -->	 current -> 2	 parent -> None
+[9,00001]->[89,00000]->[101,00002]->Last node

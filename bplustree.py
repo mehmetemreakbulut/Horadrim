@@ -78,6 +78,10 @@ class LeafNode(Node):
 
     # TODO: Implement an improved version
     def add(self, key, value):
+        try:
+            key = int(key)
+        except:
+            pass
         if not self.keys:  # Insert key if it doesn't exist
             self.keys.append(key)
             self.values.append([value])
@@ -175,7 +179,10 @@ class BPlusTree(object):
 
     def retrieve(self, key):
         node = self.root
-
+        try:
+            key = int(key)
+        except:
+            pass
         while not isinstance(node, LeafNode):
             node, index = self._find(node, key)
 
@@ -187,6 +194,11 @@ class BPlusTree(object):
 
     def delete(self, key):
         node = self.root
+
+        try:
+            key = int(key)
+        except:
+            pass
 
         while not isinstance(node, LeafNode):
             node, parentIndex = self._find(node, key)
@@ -330,6 +342,8 @@ class BPlusTree(object):
         node = self.root
         while not isinstance(node, LeafNode):
             node = node.values[-1]
+        
+        return node
 
     def showAllData(self,array):
         node = self.getLeftmostLeaf()
