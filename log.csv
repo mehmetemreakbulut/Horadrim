@@ -1,0 +1,6 @@
+John Smith,Accounting,November
+1653938757,create type angel 3 1 name str alias str affili str,success
+1653938780,create record angel merhaba merhaba merhaba,success
+1653938786,search record angel merhaba,success
+1653938789,search record angel aa,failure
+1653938797,search record evil aa,failure

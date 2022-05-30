@@ -1,0 +1,2 @@
+delete type angel
+delete type evil
