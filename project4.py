@@ -1,5 +1,8 @@
 import os
 from bplustree import *
+import time
+import csv
+import sys
 ## create type
 
 trees = {}
@@ -44,15 +47,15 @@ def createType(stat):
     words = st.split()
    
     typeName = words[2]
-    print(f"creating of {typeName} has started")
+    #print(f"creating of {typeName} has started")
     f = open("system_cat.txt","r")
     for x in f:
         try:
             line = x.split(",")
             #print(line[1])
             if(line[1]==typeName):
-                print("Type exists")
-                return
+                #print("Type exists")
+                return ("Error: type exists")
             else:
                 continue
         except:
@@ -103,7 +106,8 @@ def createType(stat):
     #except:
     #    print("Burada hata var, initial file olusturma")
     fileObject.close()
-    print("creating process is done")
+    #print("creating process is done")
+    return "Success"
     file.close()
 def deleteFromCountFile(typeName):
     try:
@@ -169,25 +173,32 @@ def deleteType(stat):
     st = stat
     words = stat.split()
     typeName = words[2]
-    deleteFromCatalogFile(typeName)
-    deleteFromCountFile(typeName)
-    deleteAllDataFiles(typeName)
     try:
         os.remove(typeName + "_tree.txt")
     except:
-        print("Tree file does not exist")
+        #print("Tree file does not exist")
+        return ("Error: tree file does not exists")
+    deleteFromCatalogFile(typeName)
+    deleteFromCountFile(typeName)
+    deleteAllDataFiles(typeName)
     if(typeName in trees):
         del trees[typeName]
-    print("Successfully deleted")
-def listTypes():
+    #print("Successfully deleted")
+    return "Success"
+def listTypes(output):
     try:
         f = open("file_name_count.txt","r")
     except:
         print("File could not be opened (file_name_count)")
+        return("Error: file could not be opened.")
     
     lines = f.readlines()
+    if(len(lines) == 0):
+        return ("Error: No type exists")
     for line in lines:
-        print(line.split(",")[0])
+        output.write(line.split(",")[0])
+        output.write("\n") # For windows maybe we can use \r
+    return "Success"
 
 def createRecord(statement):
     array = statement.split()
@@ -197,7 +208,8 @@ def createRecord(statement):
     try:
         f = open("system_cat.txt","r")
     except:
-        print("File could not be opened (system_cat)")
+        #print("File could not be opened (system_cat)")
+        return("Error: catalog could not be opened")
     
     lines = f.readlines()
     f.close()
@@ -209,6 +221,8 @@ def createRecord(statement):
             numberOfFields += 1
             if(elements[4] == 1):
                 primaryKey = elements[3]
+    if(numberOfFields == 0):
+        return ("Error: no type exists")
     
     valueToInsert = ""
     for i in range(numberOfFields):
@@ -222,13 +236,14 @@ def createRecord(statement):
    
     tree = trees[typeName]
     if(tree.retrieve(primaryValue) != None):
-        print("Key already exists")
-        return
+        #print("Key already exists")
+        return ("Error: key already exists")
 
     try:
         f = open("file_name_count.txt","r")
     except:
-        print("File could not be opened (file_name_count)")
+        #print("File could not be opened (file_name_count)")
+        return("Error: file could not be opened, count file.")
     
     lines = f.readlines()
     f.close()
@@ -245,7 +260,8 @@ def createRecord(statement):
         try:
             f = open(fileName,"r+")
         except:
-            print("File could not be opened ()")
+            #print("File could not be opened ()")
+            return("Error: file could not be opened.")
         fileHeader = f.readline()
         all = f.readline()
         #print(all)
@@ -299,7 +315,7 @@ def createRecord(statement):
                         tree = trees[typeName]
                         tree.insert(primaryValue , position + str(j) + str(k))
                         f.close()
-                        return True
+                        return "Success"
     # Open new file.
     newNumOfFiles = str(int(numberOfFiles))
     NewFile = newNumOfFiles.zfill(3)+"_"+typeName+".txt"
@@ -310,8 +326,6 @@ def createRecord(statement):
     newWrite.write(newFileHeader)
     createEmptyFile(newWrite)
     newWrite.close()
-
-
 
     countFile = open("file_name_count.txt","r")
     lines = countFile.readlines()
@@ -335,7 +349,8 @@ def deleteRecord(statement):
     try:
         f = open("system_cat.txt","r")
     except:
-        print("File could not be opened (system_cat)")
+        #print("File could not be opened (system_cat)")
+        return ("Error: file could not be opened catalog.")
 
     lines = f.readlines()
     f.close()
@@ -345,13 +360,13 @@ def deleteRecord(statement):
         if(elements[1] == typeName):
             hasType = True
     if(hasType==False):
-        return False
+        return ("Error: no type exists")
     tree = trees[typeName]
     value = tree.retrieve(primaryKey)
     #print(value)
     if(value == None):
-        print("Key doesn't exist")
-        return
+        #print("Key doesn't exist")
+        return ("Error: key doesn't exists")
     value = tree.retrieve(primaryKey)[0]
 
     file = str(value[0:3])+"_"+typeName+".txt"
@@ -360,8 +375,8 @@ def deleteRecord(statement):
     try:
         f = open(file,"r+")
     except:
-        print("Can not open to file to delete record")
-        return
+        #print("Can not open to file to delete record")
+        return ("Error: can not open file to delete record.")
     
     index = (22 + 1964 * page + 12 + 244 * record) # 22 + 1964 * page + 12 + 244 * record for MacOS // 23 + 1973 * page + 13 + 245 * record for windows
     f.seek(index)
@@ -395,29 +410,30 @@ def deleteRecord(statement):
     if(numberOfEntries=="00"):
         f.close()
         os.remove(file)
-    countFile = open("file_name_count.txt","r")
-    lines = countFile.readlines()
-    countFile.close()
-    lineCount = 0
-    
-    numberOfFiles = 0
-    for line in lines:
-        if(line.split(",")[0] == typeName):
-            numberOfFiles = line.split(",")[1]
-    #print(numberOfFiles)
-    newNumOfFiles = int(numberOfFiles)-1
+        countFile = open("file_name_count.txt","r")
+        lines = countFile.readlines()
+        countFile.close()
+        lineCount = 0
+        
+        numberOfFiles = 0
+        for line in lines:
+            if(line.split(",")[0] == typeName):
+                numberOfFiles = line.split(",")[1]
+        #print(numberOfFiles)
+        newNumOfFiles = int(numberOfFiles)-1
 
-    lineCount = 0
-    while(lineCount<len(lines)):
-        if(lines[lineCount].split(",")[0] == typeName):
-            lines[lineCount]=typeName+","+str(newNumOfFiles)+"\n"
-        lineCount = lineCount+1
-    countWrite = open("file_name_count.txt","w")
-    for line in lines:
-        countWrite.write(line)
-    countWrite.close()
+        lineCount = 0
+        while(lineCount<len(lines)):
+            if(lines[lineCount].split(",")[0] == typeName):
+                lines[lineCount]=typeName+","+str(newNumOfFiles)+"\n"
+            lineCount = lineCount+1
+        countWrite = open("file_name_count.txt","w")
+        for line in lines:
+            countWrite.write(line)
+        countWrite.close()
 
     tree.delete(primaryKey)
+    return "Success"
 
 def updateRecord(statement):
     array = statement.split()
@@ -429,6 +445,7 @@ def updateRecord(statement):
         f = open("system_cat.txt","r")
     except:
         print("File could not be opened (system_cat)")
+        return("Error: file could not be opened, catalog.")
     
     lines = f.readlines()
     f.close()
@@ -441,10 +458,10 @@ def updateRecord(statement):
             hasType = True
     if(hasType==False):
         print("No Type")
-        return
+        return ("Error: no type exists")
     if(numberOfFields!=(len(array)-4)):
         print("fields not enough")
-        return
+        return ("Error: fields not enough")
     valueToInsert = ""
     for i in range(numberOfFields):
         element = array[i + 4]
@@ -458,7 +475,7 @@ def updateRecord(statement):
     value = tree.retrieve(primaryKey)
     if(value == None):
         print("Key doesn't exist")
-        return
+        return ("Error: key doesn't exists")
     value = tree.retrieve(primaryKey)[0]
     file = str(value[0:3])+"_"+typeName+".txt"
     page = int(value[3:4])
@@ -467,14 +484,15 @@ def updateRecord(statement):
         f = open(file,"r+")
     except:
         print("Can not open to file to update record")
-        return
+        return ("Error: can not open file to update record.")
     
     index = (22 + 1964 * page + 12 + 244 * record) # 22 + 1964 * j + 12 + 244 * k for MacOS // 23 + 1973 * page + 13 + 245 * record for Windows
     f.seek(index)
  
     value = "$" + str(record) + "$" + valueToInsert.ljust(240) + "\n"
     f.write(value)
-
+    f.close()
+    return "Success"
 def searchRecord(statement):
     array = statement.split()
     typeName =  array[2]
@@ -534,7 +552,8 @@ def listRecord (typeName):
     try:
         f = open("system_cat.txt","r")
     except:
-        print("File could not be opened (system_cat)")
+        #print("File could not be opened (system_cat)")
+        return ("Error: file could not be opened")
     lines = f.readlines()
     f.close()
     numberOfFields = 0
@@ -545,15 +564,15 @@ def listRecord (typeName):
             numberOfFields += 1
             hasType = True 
     if(hasType==False):
-        print("No Type")
-        return
+        #print("No Type")
+        return ("Error: No type exists")
     
     global trees
     try:
         tree = trees[typeName]
     except:
-        print("There is no such type exists")
-        return
+        #print("There is no such type exists")
+        return("Error: no type exists")
     node = tree.getLeftmostLeaf()
     while node:
         keys = node.keys
@@ -567,8 +586,8 @@ def listRecord (typeName):
             try: 
                 f = open(file,"r")
             except:
-                print("Can not open to file to list record")
-                return
+                #print("Can not open to file to list record")
+                return("Error: can not open file to list record")
             index = (22 + 1964 * page + 12 + 244 * record)
             f.seek(index+3)
             returnString = ""
@@ -610,7 +629,10 @@ def findFieldIndexWithName(name, typeName):
 
 def filterRecord(typeName, condition):
     global trees
-    tree = trees[typeName]
+    try:
+        tree = trees[typeName]
+    except:
+        return ("Error: no type found for filtering")
     results = []
     fieldToCheckFor = ""
     conditionToCheckFor = ""
@@ -703,7 +725,7 @@ def filterRecord(typeName, condition):
             rightMost = tree.getRightmostLeaf()
             ended = False
             while rightMost:
-                for key in rightMost.keys:
+                for key in rightMost.keys[::-1]:
                     if(key <= conditionToCheckFor):
                         ended = True
                         break
@@ -715,18 +737,46 @@ def filterRecord(typeName, condition):
                 if(ended):
                     break
                 rightMost = rightMost.prevLeaf
+    if(">" in condition):
+        return results[::-1]
     return results
 ### run the file
 def main():
 
+    inputFileName = sys.argv[1]
+    outputFileName = sys.argv[2]
+    try:
+        systemcatFile = open("system_cat.txt", mode="x")
+        fileCountFile = open("file_name_count.txt", mode="x")
+        systemcatFile.close()
+        fileCountFile.close()
+    except:
+        pass
+    try:
+        f = open('horadrim-Log.csv', mode='a')
+    except:
+        print("File could not be opened log.")
+    
+    cswwriter = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+    try: 
+        inputFile = open(inputFileName, mode = "r")
+    except:
+        print("Input file could not be opened,")
+        return
+    
+    try:
+        outputFile = open(outputFileName, mode = "w")
+    except:
+        print("Output file could not be opened")
+        return
+    lines = inputFile.readlines()
+    inputFile.close()
+
     initializeDatabase()
-    while True:
-    #for i in range(0, 1):
-        #inp = "create record angel Tyrael" + str(i) + " a a " + str(i)
-        #inp = "create type angel 4 1 name str alias str affiliation str deneme int"
-        #inp = "delete type angel"
-        #inp = "filter record angel deneme<100"
-        inp = input()
+    for inp in lines:
+    #while True:
+        #inp = input()
         if (inp == ""):
             break
         fields = inp.split()
@@ -736,50 +786,89 @@ def main():
             if(numberOfFields < 7):
                 print("Input cannot have less than 1 fields for create type")
                 continue
-            createType(inp)
+            a = createType(inp)
+            if("Success" in a):
+                cswwriter.writerow([int(time.time()), inp, "success"])
+            else:
+                cswwriter.writerow([int(time.time()), inp, "failure"])
         elif(operation == "deletetype"):
             if(numberOfFields != 3):
                 print("Input is not in correct structure")
                 continue
-            deleteType(inp)
+            a = deleteType(inp)
+            if("Success" in a):
+                cswwriter.writerow([int(time.time()), inp, "success"])
+            else:
+                cswwriter.writerow([int(time.time()), inp, "failure"])
         elif(operation == "listtype"):
             if(numberOfFields != 2):
                 print("Input is not in correct structure")
                 continue
-            listTypes()
+            a = listTypes(outputFile)
+            if("Success" in a):
+                cswwriter.writerow([int(time.time()), inp, "success"])
+            else:
+                cswwriter.writerow([int(time.time()), inp, "failure"])
         elif(operation == "createrecord"):
             if(numberOfFields < 4):
                 print("Input cannot have less than 1 fields for create record")
                 continue
-            createRecord(inp)
+            a = createRecord(inp)
+            if("Success" in a):
+                cswwriter.writerow([int(time.time()), inp, "success"])
+            else:
+                cswwriter.writerow([int(time.time()), inp, "failure"])
         elif(operation == "deleterecord"):
             if(numberOfFields != 4):
                 print("Input is not in correct structure")
                 continue
-            deleteRecord(inp)
+            a = deleteRecord(inp)
+            if("Success" in a):
+                cswwriter.writerow([int(time.time()), inp, "success"])
+            else:
+                cswwriter.writerow([int(time.time()), inp, "failure"])
         elif(operation == "updaterecord"):
             if(numberOfFields < 4):
                 print("Input cannot have less than 1 fields for delete record")
                 continue
-            updateRecord(inp)
+            a = updateRecord(inp)
+            if("Success" in a):
+                cswwriter.writerow([int(time.time()), inp, "success"])
+            else:
+                cswwriter.writerow([int(time.time()), inp, "failure"])
         elif(operation == "searchrecord"):
             if(numberOfFields != 4):
                 print("Input is not in correct structure")
                 continue
             result = searchRecord(inp)
-            print(result)
+            if("Error" in result):
+                cswwriter.writerow([int(time.time()), inp, "failure"])
+                continue
+            else:
+                cswwriter.writerow([int(time.time()), inp, "success"])
+            outputFile.write(result)
+            outputFile.write("\n")
         elif(operation == "listrecord"):
             if(numberOfFields != 3):
                 print("Input is not in correct structure")
                 continue
             typeName = fields[2]
             records = listRecord(typeName)
-            if(records == None):
+            if("Error" in records):
+                cswwriter.writerow([int(time.time()), inp, "failure"])
                 continue
-            for entry in records:
-                for field in entry:
-                    print(field, end = " ")
-                print()
+            else:
+                if(records == None):
+                    cswwriter.writerow([int(time.time()), inp, "failure"])
+                    continue
+                if(len(records) == 0):
+                    cswwriter.writerow([int(time.time()), inp, "failure"])
+                    continue
+                for entry in records:
+                    for field in entry:
+                        outputFile.write(field + " ")
+                    outputFile.write("\n")
+                cswwriter.writerow([int(time.time()), inp, "success"])
         elif(operation == "filterrecord"):
             if(numberOfFields != 4):
                 print("Input is not in correct structure")
@@ -788,13 +877,19 @@ def main():
             condition = fields[3]
             records = filterRecord(typeName, condition)
             if("Error" in records):
-                print(records)
+                cswwriter.writerow([int(time.time()), inp, "failure"])
                 continue
-            for entry in records:
-                for field in entry:
-                    print(field, end = " ")
-                print()
+            else:
+                if(len(records) == 0):
+                    cswwriter.writerow([int(time.time()), inp, "failure"])
+                    continue
+                for entry in records:
+                    for field in entry:
+                        outputFile.write(field + " ")
+                    outputFile.write("\n")
+                cswwriter.writerow([int(time.time()), inp, "success"])
 
+    f.close()
     closeDatabase()
     #create = "create type angel 3 1 name str alias str affiliation str"
     

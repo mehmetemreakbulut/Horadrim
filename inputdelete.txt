@@ -1,0 +1,3 @@
+delete type angel
+delete type evil
+delete type potion
