@@ -2,6 +2,7 @@ import os
 from bplustree import *
 import time
 import csv
+import sys
 ## create type
 
 trees = {}
@@ -207,7 +208,7 @@ def createRecord(statement):
     try:
         f = open("system_cat.txt","r")
     except:
-        print("File could not be opened (system_cat)")
+        #print("File could not be opened (system_cat)")
         return("Error: catalog could not be opened")
     
     lines = f.readlines()
@@ -235,13 +236,13 @@ def createRecord(statement):
    
     tree = trees[typeName]
     if(tree.retrieve(primaryValue) != None):
-        print("Key already exists")
+        #print("Key already exists")
         return ("Error: key already exists")
 
     try:
         f = open("file_name_count.txt","r")
     except:
-        print("File could not be opened (file_name_count)")
+        #print("File could not be opened (file_name_count)")
         return("Error: file could not be opened, count file.")
     
     lines = f.readlines()
@@ -259,7 +260,7 @@ def createRecord(statement):
         try:
             f = open(fileName,"r+")
         except:
-            print("File could not be opened ()")
+            #print("File could not be opened ()")
             return("Error: file could not be opened.")
         fileHeader = f.readline()
         all = f.readline()
@@ -348,7 +349,7 @@ def deleteRecord(statement):
     try:
         f = open("system_cat.txt","r")
     except:
-        print("File could not be opened (system_cat)")
+        #print("File could not be opened (system_cat)")
         return ("Error: file could not be opened catalog.")
 
     lines = f.readlines()
@@ -364,7 +365,7 @@ def deleteRecord(statement):
     value = tree.retrieve(primaryKey)
     #print(value)
     if(value == None):
-        print("Key doesn't exist")
+        #print("Key doesn't exist")
         return ("Error: key doesn't exists")
     value = tree.retrieve(primaryKey)[0]
 
@@ -374,7 +375,7 @@ def deleteRecord(statement):
     try:
         f = open(file,"r+")
     except:
-        print("Can not open to file to delete record")
+        #print("Can not open to file to delete record")
         return ("Error: can not open file to delete record.")
     
     index = (22 + 1964 * page + 12 + 244 * record) # 22 + 1964 * page + 12 + 244 * record for MacOS // 23 + 1973 * page + 13 + 245 * record for windows
@@ -409,27 +410,27 @@ def deleteRecord(statement):
     if(numberOfEntries=="00"):
         f.close()
         os.remove(file)
-    countFile = open("file_name_count.txt","r")
-    lines = countFile.readlines()
-    countFile.close()
-    lineCount = 0
-    
-    numberOfFiles = 0
-    for line in lines:
-        if(line.split(",")[0] == typeName):
-            numberOfFiles = line.split(",")[1]
-    #print(numberOfFiles)
-    newNumOfFiles = int(numberOfFiles)-1
+        countFile = open("file_name_count.txt","r")
+        lines = countFile.readlines()
+        countFile.close()
+        lineCount = 0
+        
+        numberOfFiles = 0
+        for line in lines:
+            if(line.split(",")[0] == typeName):
+                numberOfFiles = line.split(",")[1]
+        #print(numberOfFiles)
+        newNumOfFiles = int(numberOfFiles)-1
 
-    lineCount = 0
-    while(lineCount<len(lines)):
-        if(lines[lineCount].split(",")[0] == typeName):
-            lines[lineCount]=typeName+","+str(newNumOfFiles)+"\n"
-        lineCount = lineCount+1
-    countWrite = open("file_name_count.txt","w")
-    for line in lines:
-        countWrite.write(line)
-    countWrite.close()
+        lineCount = 0
+        while(lineCount<len(lines)):
+            if(lines[lineCount].split(",")[0] == typeName):
+                lines[lineCount]=typeName+","+str(newNumOfFiles)+"\n"
+            lineCount = lineCount+1
+        countWrite = open("file_name_count.txt","w")
+        for line in lines:
+            countWrite.write(line)
+        countWrite.close()
 
     tree.delete(primaryKey)
     return "Success"
@@ -628,7 +629,10 @@ def findFieldIndexWithName(name, typeName):
 
 def filterRecord(typeName, condition):
     global trees
-    tree = trees[typeName]
+    try:
+        tree = trees[typeName]
+    except:
+        return ("Error: no type found for filtering")
     results = []
     fieldToCheckFor = ""
     conditionToCheckFor = ""
@@ -721,7 +725,7 @@ def filterRecord(typeName, condition):
             rightMost = tree.getRightmostLeaf()
             ended = False
             while rightMost:
-                for key in rightMost.keys:
+                for key in rightMost.keys[::-1]:
                     if(key <= conditionToCheckFor):
                         ended = True
                         break
@@ -733,25 +737,36 @@ def filterRecord(typeName, condition):
                 if(ended):
                     break
                 rightMost = rightMost.prevLeaf
+    if(">" in condition):
+        return results[::-1]
     return results
 ### run the file
 def main():
 
+    inputFileName = sys.argv[1]
+    outputFileName = sys.argv[2]
     try:
-        f = open('log.csv', mode='w')
+        systemcatFile = open("system_cat.txt", mode="x")
+        fileCountFile = open("file_name_count.txt", mode="x")
+        systemcatFile.close()
+        fileCountFile.close()
+    except:
+        pass
+    try:
+        f = open('horadrim-Log.csv', mode='a')
     except:
         print("File could not be opened log.")
     
     cswwriter = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
     try: 
-        inputFile = open("input.txt", mode = "r")
+        inputFile = open(inputFileName, mode = "r")
     except:
         print("Input file could not be opened,")
         return
     
     try:
-        outputFile = open("output.txt", mode = "w")
+        outputFile = open(outputFileName, mode = "w")
     except:
         print("Output file could not be opened")
         return
@@ -759,14 +774,9 @@ def main():
     inputFile.close()
 
     initializeDatabase()
-    #for inp in lines:
-    while True:
-    #for i in range(0, 1):
-        #inp = "create record angel Tyrael" + str(i) + " a a " + str(i)
-        #inp = "create type angel 4 1 name str alias str affiliation str deneme int"
-        #inp = "delete type angel"
-        #inp = "filter record angel deneme<100"
-        inp = input()
+    for inp in lines:
+    #while True:
+        #inp = input()
         if (inp == ""):
             break
         fields = inp.split()
@@ -867,7 +877,6 @@ def main():
             condition = fields[3]
             records = filterRecord(typeName, condition)
             if("Error" in records):
-                print(records)
                 cswwriter.writerow([int(time.time()), inp, "failure"])
                 continue
             else:
